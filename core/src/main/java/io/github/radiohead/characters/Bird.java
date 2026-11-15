@@ -8,9 +8,10 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 
 public class Bird {
 
-    int x;
+    public int x;
     public float y;
-    int width, height;
+    public int width;
+    public int height;
 
     float speed;
     public float jumpHeight;
