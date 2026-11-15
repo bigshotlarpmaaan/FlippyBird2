@@ -1,0 +1,22 @@
+# Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Gradle
+.gradle/
+build/
+out/
+
+# Android
+local.properties
+captures/
+
+# LibGDX: ассеты лучше хранить в android/assets и не игнорировать их.
+# Если ты хочешь, чтобы картинки тоже попали в репозиторий — эту строку НЕ добавляй:
+# assets/
+
+# Системные файлы
+.DS_Store
+Thumbs.db
