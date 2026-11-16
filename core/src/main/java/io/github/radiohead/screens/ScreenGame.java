@@ -38,18 +38,25 @@ public class ScreenGame implements Screen {
     int tubeCount = 3;
     private Tube[] tubes;
 
-    private Array<Coin> coins;
+    private Array<Coin> coins; // Список монеток, которые сейчас летят по экрану. Array, потому что их число меняется в любой момент.
     private Texture coinTexture;
     private TextureRegion coinRegion;
     private float coinSpawnTimer = 0f;
     private static final float COIN_SPAWN_RATE = 9f;
 
-    private boolean shieldActive = false;
-    private float shieldTimer = 0f;
-    private static final float SHIELD_TIME = 6f;
+
+
+    private boolean shieldActive = false;  // Включён ли щит
+    private float shieldTimer = 0f; // Сколько секунд щита осталось.
+    private static final float SHIELD_TIME = 6f;     // Полная длительность щита —  6 секунд.
 
     private static final float COIN_SPEED = 600f;
 
+    private int lives;
+    private static final int START_LIVES = 3;
+    private Texture heartTexture;
+    private float invulnerableTimer = 0f;
+    private static final float INVULN_TIME = 1.5f;
 
     public ScreenGame(Main main) {
         this.main = main;
@@ -59,11 +66,13 @@ public class ScreenGame implements Screen {
 
         pointCounter = new PointCounter(SCR_WIDTH - pointCounterMarginRight, SCR_HEIGHT - pointCounterMarginTop);
 
-        initTubes();
+        initTubes();   // Заполняем массив колонн
 
-        coins = new Array<>();
+        coins = new Array<>(); //пустой список монеток
         coinTexture = new Texture(Gdx.files.internal("coin.png"));
-        coinRegion = new TextureRegion(coinTexture);
+        coinRegion = new TextureRegion(coinTexture); // Оборачиваем текстуру в регион — он нужен для draw с вращением
+        heartTexture = new Texture(Gdx.files.internal("heart.png"));
+        lives = START_LIVES;
     }
 
 
@@ -80,6 +89,9 @@ public class ScreenGame implements Screen {
         shieldActive = false;
         shieldTimer = 0;
         coinSpawnTimer = 0;
+
+        lives = START_LIVES;
+        invulnerableTimer = 0;
     }
 
     @Override
@@ -112,6 +124,11 @@ public class ScreenGame implements Screen {
             if (shieldTimer <= 0) {
                 shieldActive = false;
             }
+
+        }
+
+        if (invulnerableTimer > 0) {       // Тикаем неуязвимость вниз, если она включена
+            invulnerableTimer -= delta;
         }
 
         coinSpawnTimer += delta;
@@ -144,9 +161,9 @@ public class ScreenGame implements Screen {
         for (Tube tube : tubes) {
             tube.move();
             if (tube.isHit(bird)) {
-                if (!shieldActive) {
+                if (!shieldActive && invulnerableTimer <= 0) {   // Умираем только если нет щита И неуязвимости
                     System.out.println("hit");
-                    isGameOver = true;
+                    hitByTube();
                 }
             } else if (tube.needAddPoint(bird)) {
                 gamePoints += 1;
@@ -174,7 +191,11 @@ public class ScreenGame implements Screen {
         main.batch.setColor(Color.WHITE);
         main.batch.end();
 
-        bird.draw(main.batch);
+        // Птица мигает во время неуязвимости: (int)(timer*10)%2 даёт 0 или 1 попеременно
+        boolean birdBlinking = invulnerableTimer > 0 && (int) (invulnerableTimer * 10) % 2 == 0;
+        if (!birdBlinking) {
+            bird.draw(main.batch);
+        }
 
         if (shieldActive) {
             boolean blink = shieldTimer < 2f && (int) (shieldTimer * 10) % 2 == 0;
@@ -189,10 +210,40 @@ public class ScreenGame implements Screen {
             }
         }
 
+        drawHearts();
+
         pointCounter.draw(main.batch, gamePoints);
 
 
         //Обрати внимание на параметр delta. Он содержит время в секундах, прошедшее с момента предыдущего вызова метода render(). Позже мы обязательно воспользуемся этим значением!
+    }
+
+    private void hitByTube() {        // Обработка удара: минус жизнь, при нуле — проигрыш
+        lives--;
+        System.out.println("lives left: " + lives);
+
+        if (lives <= 0) {
+            isGameOver = true;
+        } else {
+            invulnerableTimer = INVULN_TIME;   // Даём 1,5 секунды неуязвимости
+        }
+    }
+
+    private void drawHearts() {       // Три сердечка в левом верхнем углу
+        main.batch.begin();
+        for (int i = 0; i < START_LIVES; i++) {
+            if (i < lives) {
+                main.batch.setColor(Color.WHITE);              // целое сердце — как есть
+            } else {
+                main.batch.setColor(0.25f, 0.25f, 0.25f, 0.6f); // потерянное — тёмное и полупрозрачное
+            }
+            main.batch.draw(heartTexture,
+                10 + i * 50,                 // отступ слева 10, шаг между сердцами 50 пикселей
+                SCR_HEIGHT - 60,             // у верхнего края
+                40, 40);
+        }
+        main.batch.setColor(Color.WHITE);
+        main.batch.end();
     }
 
     private void activateShield() {
@@ -240,6 +291,7 @@ public class ScreenGame implements Screen {
             tube.dispose();
         }
         coinTexture.dispose();
+        heartTexture.dispose();     // Освобождаем текстуру сердечка
         coins.clear();
     }
 
