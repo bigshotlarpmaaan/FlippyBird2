@@ -31,6 +31,8 @@ public class ScreenGame implements Screen {
 
     int gamePoints;
     public static boolean isGameOver;
+
+
     Main main;
     Bird bird;
     PointCounter pointCounter;
@@ -157,10 +159,11 @@ public class ScreenGame implements Screen {
             System.out.println("not in field");
             isGameOver = true;
         }
-
+        boolean collidingNow = false;
         for (Tube tube : tubes) {
             tube.move();
             if (tube.isHit(bird)) {
+                collidingNow = true;
                 if (!shieldActive && invulnerableTimer <= 0) {   // Умираем только если нет щита И неуязвимости
                     System.out.println("hit");
                     hitByTube();
@@ -171,7 +174,9 @@ public class ScreenGame implements Screen {
                 System.out.println(gamePoints);
             }
         }
-
+        if (!collidingNow) {
+            invulnerableTimer = 0;
+        }
 
         background.move();
 
